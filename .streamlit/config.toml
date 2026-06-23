@@ -1,0 +1,15 @@
+[theme]
+base = "dark"
+primaryColor = "#E8A33D"
+backgroundColor = "#161B22"
+secondaryBackgroundColor = "#1F2630"
+textColor = "#E6EAF0"
+borderColor = "#30394A"
+showWidgetBorder = true
+baseRadius = "small"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;700&display=swap"
+headingFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&display=swap"
+
+[theme.sidebar]
+backgroundColor = "#10141A"
+secondaryBackgroundColor = "#1F2630"
