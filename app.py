@@ -212,6 +212,30 @@ def extract_tool_calls(afc_history):
     return calls
 
 
+def safe_response_text(response, tool_calls):
+    """Ekstrak teks jawaban dengan aman -- response.text bisa None walau tool berhasil dipanggil."""
+    text = getattr(response, "text", None)
+    if text:
+        return text
+
+    # Coba kumpulkan manual dari semua part teks yang ada
+    try:
+        parts = response.candidates[0].content.parts
+        manual_text = "".join(p.text for p in parts if getattr(p, "text", None))
+        if manual_text.strip():
+            return manual_text
+    except Exception:
+        pass
+
+    # Fallback terakhir -- jangan biarkan None ikut tersimpan ke riwayat chat
+    if tool_calls:
+        return (
+            "Tool-nya berhasil dipanggil dan hasilnya ada di atas, tapi aku nggak berhasil "
+            "menyusun kalimat jawabannya. Coba tanya ulang dengan kalimat yang sedikit berbeda?"
+        )
+    return "Maaf, aku nggak berhasil menjawab pertanyaan itu. Coba tanya dengan cara lain?"
+
+
 def call_agent(chat_history, new_message):
     client = genai.Client(api_key=GEMINI_API_KEY)
     contents = build_contents(chat_history, new_message)
@@ -221,7 +245,8 @@ def call_agent(chat_history, new_message):
         config=types.GenerateContentConfig(tools=AVAILABLE_TOOLS, temperature=0.3),
     )
     tool_calls = extract_tool_calls(response.automatic_function_calling_history)
-    return response.text, tool_calls
+    reply_text = safe_response_text(response, tool_calls)
+    return reply_text, tool_calls
 
 
 # ============================================================
@@ -308,7 +333,7 @@ if new_message:
                         st.caption(f"↳ {call['result']}")
 
         msg_index = len(st.session_state.chat_history)
-        st.session_state.chat_history.append({"role": "model", "content": reply})
+        st.session_state.chat_history.append({"role": "model", "content": reply or "(tidak ada jawaban)"})
         if tool_calls:
             st.session_state.tool_log[msg_index] = tool_calls
     except Exception as e:
