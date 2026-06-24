@@ -19,6 +19,11 @@ Semua ini terjadi otomatis lewat fitur **Automatic Function Calling (AFC)** dari
 - 🧮 **Kalkulator** -- hitung ekspresi matematika dengan aman (tanpa `eval()` mentah)
 - 🕐 **Cek Waktu** -- zona waktu manapun (`zoneinfo` bawaan Python, tanpa API)
 - 💱 **Konversi Mata Uang** -- kurs terkini (Frankfurter API, gratis tanpa key, termasuk IDR)
+- 📏 **Konversi Satuan** -- panjang (km/mil/m/ft/cm/inch), berat (kg/lbs), suhu (celsius/fahrenheit)
+- 🎲 **Lempar Dadu** -- dadu virtual, atur jumlah sisi & lemparan
+- 🎯 **Fakta Acak** -- fakta menarik random, tanpa API
+- 💡 **Tombol Saran Pertanyaan** -- contoh pertanyaan siap klik buat yang belum tahu mau nanya apa
+- 🧪 **Panel Tes Tools Manual** -- coba tiap tool langsung dari sidebar, tanpa lewat AI
 - 🔧 **Transparansi Tools** -- tiap balasan punya expander "Tools yang dipanggil", nampilin fungsi apa yang dieksekusi dan argumennya -- bagus buat belajar cara kerja agent-nya
 - 🔒 **Proteksi Password (opsional)**
 
