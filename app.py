@@ -7,6 +7,7 @@ Gemini API. Semua tools memakai layanan gratis tanpa API key tambahan.
 
 import ast
 import operator
+import random
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -164,7 +165,66 @@ def convert_currency(amount: float, from_currency: str, to_currency: str) -> str
         return f"Gagal mengonversi mata uang: {e}"
 
 
-AVAILABLE_TOOLS = [get_weather, calculate, get_current_time, convert_currency]
+_UNIT_CONVERSIONS = {
+    ("km", "mil"): lambda v: v * 0.621371,
+    ("mil", "km"): lambda v: v / 0.621371,
+    ("kg", "lbs"): lambda v: v * 2.20462,
+    ("lbs", "kg"): lambda v: v / 2.20462,
+    ("celsius", "fahrenheit"): lambda v: v * 9 / 5 + 32,
+    ("fahrenheit", "celsius"): lambda v: (v - 32) * 5 / 9,
+    ("m", "ft"): lambda v: v * 3.28084,
+    ("ft", "m"): lambda v: v / 3.28084,
+    ("cm", "inch"): lambda v: v / 2.54,
+    ("inch", "cm"): lambda v: v * 2.54,
+}
+
+
+def convert_unit(value: float, from_unit: str, to_unit: str) -> str:
+    """Mengonversi nilai satuan pengukuran umum: panjang, berat, dan suhu.
+
+    Args:
+        value: Nilai yang ingin dikonversi.
+        from_unit: Satuan asal. Pilihan: 'km', 'mil', 'kg', 'lbs', 'celsius', 'fahrenheit', 'm', 'ft', 'cm', 'inch'.
+        to_unit: Satuan tujuan, dari daftar yang sama dengan from_unit.
+    """
+    key = (from_unit.lower().strip(), to_unit.lower().strip())
+    if key not in _UNIT_CONVERSIONS:
+        return f"Konversi dari '{from_unit}' ke '{to_unit}' belum didukung."
+    result = _UNIT_CONVERSIONS[key](value)
+    return f"{value} {from_unit} = {result:.4g} {to_unit}."
+
+
+def roll_dice(sides: int = 6, count: int = 1) -> str:
+    """Melempar dadu virtual secara acak.
+
+    Args:
+        sides: Jumlah sisi dadu, misalnya 6 untuk dadu standar atau 20 untuk dadu D&D.
+        count: Berapa kali dadu dilempar sekaligus.
+    """
+    if sides < 2 or count < 1 or count > 20:
+        return "Jumlah sisi minimal 2, dan jumlah lemparan maksimal 20 sekali jalan."
+    results = [random.randint(1, sides) for _ in range(count)]
+    return f"Hasil lempar {count}x dadu {sides} sisi: {results} (total: {sum(results)})."
+
+
+_RANDOM_FACTS = [
+    "Madu nggak akan pernah basi kalau disimpan dengan benar -- arkeolog pernah menemukan madu berusia 3000 tahun yang masih bisa dimakan.",
+    "Jantung udang ada di kepalanya.",
+    "Satu hari di planet Venus lebih lama daripada satu tahun di Venus.",
+    "Bintang laut nggak punya otak.",
+    "Gurita punya 3 jantung dan darah berwarna biru.",
+    "Komodo, kadal terbesar di dunia, cuma ditemukan secara alami di Indonesia.",
+    "Air mendidih lebih cepat di puncak gunung dibanding di permukaan laut.",
+    "Bahasa Indonesia dipakai sebagai bahasa kedua oleh ratusan juta orang di Asia Tenggara.",
+]
+
+
+def random_fact() -> str:
+    """Memberikan satu fakta menarik dan acak tentang dunia."""
+    return random.choice(_RANDOM_FACTS)
+
+
+AVAILABLE_TOOLS = [get_weather, calculate, get_current_time, convert_currency, convert_unit, roll_dice, random_fact]
 
 
 # ============================================================
@@ -255,15 +315,13 @@ def call_agent(chat_history, new_message):
 st.title("🛠️ Sigap")
 st.caption("AI yang bisa bertindak, bukan cuma ngomong -- ditenagai function calling Gemini.")
 
-badge_col1, badge_col2, badge_col3, badge_col4 = st.columns(4)
+badge_col1, badge_col2, badge_col3 = st.columns(3)
 with badge_col1:
-    st.badge("Cuaca", icon="🌤️", color="blue")
+    st.badge(f"{len(AVAILABLE_TOOLS)} Tools", icon="🛠️", color="blue")
 with badge_col2:
-    st.badge("Kalkulator", icon="🧮", color="orange")
+    st.badge("Gemini API", icon="✨", color="violet")
 with badge_col3:
-    st.badge("Waktu", icon="🕐", color="green")
-with badge_col4:
-    st.badge("Kurs", icon="💱", color="violet")
+    st.badge(APP_VERSION, icon="🚀", color="gray")
 
 st.divider()
 
@@ -295,10 +353,56 @@ with st.sidebar:
     st.caption("🧮 **Kalkulator** -- hitung ekspresi matematika")
     st.caption("🕐 **Waktu** -- cek waktu di zona waktu manapun")
     st.caption("💱 **Kurs** -- konversi mata uang terkini")
+    st.caption("📏 **Satuan** -- konversi panjang/berat/suhu")
+    st.caption("🎲 **Dadu** -- lempar dadu virtual")
+    st.caption("🎯 **Fakta Acak** -- fakta menarik random")
     st.caption("AI sendiri yang memutuskan tool mana yang dipanggil, berdasarkan pertanyaanmu.")
 
     st.divider()
     st.button("🧹 Mulai Obrolan Baru", on_click=reset_all, use_container_width=True)
+
+    st.divider()
+    st.header("🧪 Tes Tools Manual")
+    st.caption("Coba tiap tool langsung, tanpa lewat AI -- buat lihat fungsi mentahnya kerja gimana.")
+
+    with st.expander("🌤️ Cuaca"):
+        t_city = st.text_input("Kota", value="Jakarta", key="t_city")
+        if st.button("Jalankan", key="run_weather", use_container_width=True):
+            st.info(get_weather(t_city))
+
+    with st.expander("🧮 Kalkulator"):
+        t_expr = st.text_input("Ekspresi", value="12 * (3 + 4)", key="t_expr")
+        if st.button("Jalankan", key="run_calc", use_container_width=True):
+            st.info(calculate(t_expr))
+
+    with st.expander("🕐 Waktu"):
+        t_tz = st.text_input("Zona waktu (IANA)", value="Asia/Jakarta", key="t_tz")
+        if st.button("Jalankan", key="run_time", use_container_width=True):
+            st.info(get_current_time(t_tz))
+
+    with st.expander("💱 Kurs"):
+        t_amount = st.number_input("Jumlah", value=100.0, key="t_amount")
+        t_from = st.text_input("Dari", value="USD", key="t_from")
+        t_to = st.text_input("Ke", value="IDR", key="t_to")
+        if st.button("Jalankan", key="run_currency", use_container_width=True):
+            st.info(convert_currency(t_amount, t_from, t_to))
+
+    with st.expander("📏 Satuan"):
+        t_value = st.number_input("Nilai", value=10.0, key="t_value")
+        t_unit_from = st.text_input("Dari satuan", value="km", key="t_unit_from")
+        t_unit_to = st.text_input("Ke satuan", value="mil", key="t_unit_to")
+        if st.button("Jalankan", key="run_unit", use_container_width=True):
+            st.info(convert_unit(t_value, t_unit_from, t_unit_to))
+
+    with st.expander("🎲 Dadu"):
+        t_sides = st.number_input("Sisi dadu", value=6, min_value=2, key="t_sides")
+        t_count = st.number_input("Jumlah lemparan", value=1, min_value=1, max_value=20, key="t_count")
+        if st.button("Jalankan", key="run_dice", use_container_width=True):
+            st.info(roll_dice(int(t_sides), int(t_count)))
+
+    with st.expander("🎯 Fakta Acak"):
+        if st.button("Jalankan", key="run_fact", use_container_width=True):
+            st.info(random_fact())
 
 
 # ============================================================
@@ -314,17 +418,32 @@ for i, msg in enumerate(st.session_state.chat_history):
                     st.markdown(f"**`{call['name']}`**({', '.join(f'{k}={v!r}' for k, v in call['args'].items())})")
                     st.caption(f"↳ {call['result']}")
 
-new_message = st.chat_input("Tanya apa saja -- cuaca, hitung-hitungan, jam, atau kurs...")
+if not st.session_state.chat_history:
+    st.caption("💡 Coba tanya:")
+    suggested_questions = [
+        "Cuaca di Jakarta gimana?",
+        "100 USD ke IDR berapa?",
+        "Lempar dadu 2 kali",
+        "Kasih aku fakta acak",
+    ]
+    chip_cols = st.columns(len(suggested_questions))
+    for col, q in zip(chip_cols, suggested_questions):
+        with col:
+            if st.button(q, key=f"suggest_{q}", use_container_width=True):
+                st.session_state.pending_message = q
 
-if new_message:
-    st.session_state.chat_history.append({"role": "user", "content": new_message})
+new_message = st.chat_input("Tanya apa saja -- cuaca, hitung-hitungan, jam, kurs, satuan, dadu, atau fakta acak...")
+effective_message = new_message or st.session_state.pop("pending_message", None)
+
+if effective_message:
+    st.session_state.chat_history.append({"role": "user", "content": effective_message})
     with st.chat_message("user"):
-        st.write(new_message)
+        st.write(effective_message)
 
     try:
         with st.chat_message("assistant"):
             with st.spinner("Sigap berpikir..."):
-                reply, tool_calls = call_agent(st.session_state.chat_history[:-1], new_message)
+                reply, tool_calls = call_agent(st.session_state.chat_history[:-1], effective_message)
             st.write(reply)
             if tool_calls:
                 with st.expander("🔧 Tools yang dipanggil"):
